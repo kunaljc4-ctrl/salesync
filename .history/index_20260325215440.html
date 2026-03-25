@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SaleSync App</title>
+
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js for Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- HTML5-QRCode for Barcode Scanning -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+
+<body class="light-mode">
+
+    <!-- MOBILE HEADER -->
+    <header class="mobile-header">
+        <div class="logo"><i class="fa-solid fa-bolt" style="color: var(--primary);"></i> SaleSync</div>
+        <button id="mobileToggle"
+            style="background:transparent;border:none;font-size:24px;color:var(--text);cursor:pointer;"><i
+                class="fa-solid fa-bars"></i></button>
+    </header>
+
+    <div class="app-layout">
+
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="app-sidebar" id="appSidebar">
+            <div class="sidebar-brand" id="sidebarBrand" style="cursor: pointer;" title="Collapse Menu">
+                <i class="fa-solid fa-bolt"></i>
+                <span>SaleSync</span>
+            </div>
+
+            <nav class="sidebar-menu">
+                <button class="menu-item active" data-view="view-analytics">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Business Analytics</span>
+                </button>
+                <button class="menu-item" data-view="view-invoice">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>Sales</span>
+                </button>
+
+
+                <button class="menu-item" data-view="view-inventory">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                    <span>Inventory</span>
+                </button>
+                <button class="menu-item" data-view="view-crm">
+                    <i class="fa-solid fa-users"></i>
+                    <span>CRM <span
+                </button>
+
+                <div style="margin-top: 16px; padding: 0 16px;">
+                    <button class="menu-item" data-view="view-sia"
+                        style="width: 100%; aspect-ratio: 1; max-height: 48px; max-width: 48px; justify-content: center; padding: 0; border-radius: 12px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(168, 85, 247, 0.2)); border: 1px solid rgba(168, 85, 247, 0.3);"
+                        title="Sia AI Page">
+                        <i class="fa-solid fa-wand-magic-sparkles"
+                            style="color: #a855f7; margin: 0; font-size: 20px;"></i>
+                        <span style="display: none;">Sia AI</span>
+                    </button>
+                </div>
+            </nav>
+
+            <div style="flex: 1;"></div>
+
+            <div class="sidebar-footer">
+                <!-- Developer Mode moved to Settings -->
+                <button class="menu-item" id="notificationBtn" style="position: relative;"
+                    onclick="document.getElementById('notificationPanel').classList.toggle('show')">
+                    <i class="fa-regular fa-bell"></i>
+                    <span>Notifications <span id="notifBadge"
+                            style="position: absolute; right: 10px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; display: flex; align-items: center; justify-content: center; top: 14px; font-weight: bold; display: none;"></span></span>
+                </button>
+                <button class="menu-item" data-view="view-settings">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN APP CONTENT -->
+        <main class="app-main">
+
+            <!-- FLOATING TOGGLE FOR FULLSCREEN MODE -->
+            <button id="floatingToggle" class="floating-toggle" title="Expand Menu">
+                <i class="fa-solid fa-bolt"></i>
+            </button>
+
+
+
+            <!-- ================= VIEW: NEW INVOICE ================= -->
+            <div class="app-view" id="view-invoice">
+
+                <div class="view-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div>
+                        <h2>Create New Sale</h2>
+                        <p>Follow the steps below to track an invoice professionally.</p>
+                    </div>
+                    <button type="button" class="btn-pill outline" style="padding: 6px 14px; font-size: 13px;"
+                        onclick="resetFullInvoiceForm()">
+                        <i class="fa-solid fa-rotate-left"></i> Reset Form
+                    </button>
+                </div>
+
+                <!-- WIZARD STEPPER -->
+                <div class="stepper-wrapper">
+                    <div class="stepper-progress" id="progressBar"></div>
+                    <div class="tabs stepper-tabs">
+                        <button class="tab-btn active" data-tab="customer"><span class="step-num">1</span>
+                            Customer</button>
+                        <button class="tab-btn" data-tab="add-item"><span class="step-num">2</span> Products</button>
+                        <button class="tab-btn" data-tab="billing"><span class="step-num">3</span> Billing</button>
+                        <button class="tab-btn" data-tab="finalize"><span class="step-num">4</span> Review</button>
+                    </div>
+                </div>
+
+                <form id="purchaseForm">
+
+                    <!-- CUSTOMER STEP -->
+                    <div class="card-container tab-content active" id="customer">
+                        <div class="section-title">
+                            <span><i class="fa-solid fa-user"></i> Customer Details</span>
+                            <button type="button" id="resetCustomerBtn" class="small-reset-btn"
+                                title="Reset Customer Fields">
+                                <i class="fa-solid fa-rotate-right"></i> Reset
+                            </button>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="customerName">Full Name</label>
+                                <input type="text" name="customerName" id="customerName" maxlength="40"
+                                    placeholder="Enter customer name" list="customerSuggestions" required />
+                                <datalist id="customerSuggestions"></datalist>
+                            </div>
+                            <div class="field">
+                                <label for="customerPhone">Phone Number</label>
+                                <input type="tel" name="customerPhone" id="customerPhone" maxlength="10"
+                                    pattern="[0-9]{10}" title="Please enter a 10-digit phone number"
+                                    placeholder="10-digit number" required />
+                                <div
+                                    style="margin-top: 6px; color: var(--text-muted); font-size: 11px; line-height: 1.4; display: flex; align-items: flex-start; gap: 6px; background: var(--bg); padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border);">
+                                    <i class="fa-solid fa-circle-info"
+                                        style="color: var(--primary); margin-top: 1px;"></i>
+                                    <span>Other information is fetched automatically when phone number is entered</span>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label for="altPhone">Alternate Phone</label>
+                                <input type="tel" name="altPhone" id="altPhone" maxlength="10" pattern="[0-9]{10}"
+                                    title="Please enter a 10-digit phone number" placeholder="Optional" />
+                            </div>
+                            <div class="field">
+                                <label for="customerEmail">Email Address</label>
+                                <input type="email" name="customerEmail" id="customerEmail"
+                                    placeholder="example@mail.com" maxlength="40" />
+                            </div>
+                        </div>
+
+                        <div class="field" style="margin-bottom: 24px;">
+                            <label for="customerAddress">Billing Address</label>
+                            <textarea name="customerAddress" id="customerAddress" maxlength="150"
+                                placeholder="Full street address..."></textarea>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="invoiceID">Invoice Number</label>
+                                <input type="text" name="invoiceID" id="invoiceID" placeholder="Generating..."
+                                    readonly />
+                            </div>
+                            <div class="field">
+                                <label for="globalPurchaseDate">Date of Sale</label>
+                                <input type="date" name="purchaseDate" id="globalPurchaseDate" />
+                            </div>
+                        </div>
+
+                        <div class="actions">
+                            <button type="button" class="next-btn primary">Proceed to Products <i
+                                    class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- ADD ITEM STEP -->
+                    <div class="card-container tab-content" id="add-item">
+                        <div class="section-title"><i class="fa-solid fa-cart-plus"></i> Add Item to Invoice</div>
+
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="categorySelect">Category</label>
+                                <select name="category" id="categorySelect" required>
+                                    <option value="">Select Category</option>
+                                    <option>Accessory</option>
+                                    <option>Cable</option>
+                                    <option>Charger</option>
+                                    <option>Earbuds</option>
+                                    <option>Headphones</option>
+                                    <option>Keyboard</option>
+                                    <option>Laptop</option>
+                                    <option>Mobile</option>
+                                    <option>Mouse</option>
+                                    <option>PowerBank</option>
+                                    <option>Smartwatch</option>
+                                    <option>Speaker</option>
+                                    <option>Tablet</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="brandInput">Brand</label>
+                                <input list="brandSuggestions" name="brand" id="brandInput"
+                                    placeholder="Search brand..." required />
+                                <datalist id="brandSuggestions"></datalist>
+                            </div>
+                            <div class="field">
+                                <label for="modelInput">Model</label>
+                                <input list="modelSuggestions" name="model" id="modelInput"
+                                    placeholder="Search model..." required />
+                                <datalist id="modelSuggestions"></datalist>
+                            </div>
+                            <div class="field">
+                                <label for="serialInput" id="serialLabel">Serial / IMEI</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="text" name="serial" id="serialInput" placeholder="Serial or unique ID"
+                                        required pattern="[A-Za-z0-9]{4,20}"
+                                        title="Enter valid serial or IMEI (4-20 characters)" style="flex: 1;" />
+                                    <button type="button" class="scan-btn" onclick="openScanner('serialInput')"
+                                        style="width: 48px; background: var(--primary-glow); color: var(--primary); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;">
+                                        <i class="fa-solid fa-barcode"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label for="colorInput">Color</label>
+                                <select name="color" id="colorInput">
+                                    <option value="">Select Color</option>
+                                    <option value="_custom_">✨ Custom / Type Own Color</option>
+                                </select>
+                                <input type="text" id="customColorInput" placeholder="Type custom color..."
+                                    style="display: none; margin-top: 8px;" />
+                            </div>
+                            <div class="field">
+                                <label for="batchNoInput">Batch No.</label>
+                                <input type="text" name="batchNo" id="batchNoInput" placeholder="Batch identifier" />
+                            </div>
+                        </div>
+
+                        <div id="specFields" style="margin-bottom: 32px;"></div>
+
+                        <div class="section-title"><i class="fa-solid fa-tag"></i> Item Pricing</div>
+
+                        <div class="quick-prices">
+                            <button type="button" class="priceBtn">499</button>
+                            <button type="button" class="priceBtn">999</button>
+                            <button type="button" class="priceBtn">1499</button>
+                            <button type="button" class="priceBtn">1999</button>
+                            <button type="button" class="priceBtn">2499</button>
+                            <button type="button" class="priceBtn">4999</button>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="itemSellingPrice">Selling Price (₹)</label>
+                                <input type="number" name="itemSellingPrice" id="itemSellingPrice" min="0"
+                                    placeholder="0.00" required>
+                            </div>
+                            <div class="field">
+                                <label for="itemDiscount">Item Discount (₹)</label>
+                                <input type="number" name="itemDiscount" id="itemDiscount" min="0" placeholder="0.00">
+                            </div>
+                            <div class="field">
+                                <label for="itemPurchaseCost">Inventory Cost (₹)</label>
+                                <input type="number" name="itemPurchaseCost" id="itemPurchaseCost" min="0"
+                                    placeholder="0.00" readonly
+                                    style="background-color: var(--bg); cursor: not-allowed; opacity: 0.8;">
+                            </div>
+                            <div class="field">
+                                <label for="itemTaxRate">Tax (GST)</label>
+                                <select name="itemTaxRate" id="itemTaxRate">
+                                    <option value="0" selected>Exempt (0%)</option>
+                                    <option value="5">GST 5%</option>
+                                    <option value="12">GST 12%</option>
+                                    <option value="18">GST 18%</option>
+                                    <option value="28">GST 28%</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="actions" style="margin-top: 24px;">
+                            <button type="button" id="addProductBtn" class="next-btn primary">
+                                <i class="fa-solid fa-plus-circle"></i> Add To Invoice
+                            </button>
+                        </div>
+
+                        <div class="actions" style="margin-top: 16px;">
+                            <button type="button" class="next-btn outline">Go to Billing Summary <i
+                                    class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- BILLING & PAYMENT STEP -->
+                    <div class="card-container tab-content" id="billing">
+                        <div class="section-title"><i class="fa-solid fa-receipt"></i> Items Summary</div>
+
+                        <div class="product-table-container">
+                            <table class="product-table" id="productTable">
+                                <thead>
+                                    <tr>
+                                        <th>Item Description</th>
+                                        <th>Price</th>
+                                        <th>Tax</th>
+                                        <th>Total</th>
+                                        <th style="width: 60px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productTableBody"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="form-grid" style="margin-top: 32px;">
+                            <div class="field">
+                                <label for="subtotalDisplay">Subtotal</label>
+                                <input type="number" name="subtotalDisplay" id="subtotalDisplay" readonly />
+                            </div>
+                            <div class="field">
+                                <label for="discount">Global Discount</label>
+                                <input type="number" name="discount" id="discount" min="0" placeholder="0.00">
+                            </div>
+                            <div class="field">
+                                <label for="finalPrice">Grand Total</label>
+                                <input type="number" name="finalPrice" id="finalPrice" readonly
+                                    style="font-weight: 700; color: var(--primary);">
+                            </div>
+                            <div class="field admin-only" style="opacity: 0.7;">
+                                <label for="profit"><i class="fa-solid fa-chart-line"></i> Profit Marker</label>
+                                <input type="number" name="profit" id="profit" readonly
+                                    style="color: #10b981; font-weight: bold;" />
+                            </div>
+                        </div>
+
+                        <div class="section-title" style="margin-top: 32px;"><i class="fa-solid fa-wallet"></i> Payment
+                            & Warranty</div>
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="paymentMode">Payment Mode</label>
+                                <select name="paymentMode" id="paymentMode" required>
+                                    <option value="">Select Mode</option>
+                                    <option>Cash</option>
+                                    <option>UPI / QR Scan</option>
+                                    <option>Debit/Credit Card</option>
+                                    <option>EMI Finance</option>
+                                    <option>Credit (Udhaar)</option>
+                                </select>
+                            </div>
+                            <div class="field" id="paymentStatusField" style="display: none;">
+                                <label for="paymentStatus">Payment Status</label>
+                                <select name="paymentStatus" id="paymentStatus">
+                                    <option value="Paid">Fully Paid</option>
+                                    <option value="Unpaid">Unpaid</option>
+                                </select>
+                            </div>
+                            <div class="field" id="advanceField">
+                                <label for="advance">Advance Paid</label>
+                                <input type="number" name="advance" id="advance" min="0" placeholder="0.00" />
+                            </div>
+                            <div class="field" id="balanceField">
+                                <label for="balance">Balance Due</label>
+                                <input type="number" name="balance" id="balance" readonly
+                                    style="font-weight: 700; color: #ef4444;" />
+                            </div>
+                        </div>
+
+                        <!-- EMI SPECIFIC FIELDS -->
+                        <div id="emiFields"
+                            style="display: none; margin-top: 24px; padding: 20px; background: var(--bg); border: 1px dashed var(--primary-glow); border-radius: var(--radius-md);">
+                            <div
+                                style="font-weight: 600; color: var(--primary); margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                                <i class="fa-solid fa-calculator"></i> EMI Configuration
+                            </div>
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label for="emiTenure">Tenure (Months)</label>
+                                    <select id="emiTenure">
+                                        <option value="3">3 Months</option>
+                                        <option value="6">6 Months</option>
+                                        <option value="9">9 Months</option>
+                                        <option value="12">12 Months</option>
+                                        <option value="18">18 Months</option>
+                                        <option value="24">24 Months</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="emiInterest">Annual Interest (%)</label>
+                                    <input type="number" id="emiInterest" placeholder="0.00" value="0">
+                                </div>
+                                <div class="field">
+                                    <label for="emiProcessingFee">Processing Fee (₹)</label>
+                                    <input type="number" id="emiProcessingFee" placeholder="0.00" value="0">
+                                </div>
+                                <div class="field">
+                                    <label style="color: var(--primary);">Monthly EMI (Approx)</label>
+                                    <div id="emiMonthlyDisplay"
+                                        style="font-size: 20px; font-weight: 800; color: var(--primary);">₹0.00</div>
+                                </div>
+                            </div>
+                            <div id="emiTotalPayableDisplay"
+                                style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">
+                                Total Payable: ₹0.00 (Incl. Interest & Fees)
+                            </div>
+                        </div>
+
+                        <div class="form-grid" style="margin-bottom: 24px;">
+                            <div class="field">
+                                <label for="warrantyStart">Warranty Start</label>
+                                <input type="date" name="warrantyStart" id="warrantyStart" />
+                            </div>
+                            <div class="field">
+                                <label for="warrantyEnd">Warranty End</label>
+                                <input type="date" name="warrantyEnd" id="warrantyEnd" />
+                            </div>
+                        </div>
+
+                        <div class="actions">
+                            <button type="button" class="next-btn primary">Proceed to Review <i
+                                    class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- FINALIZE STEP -->
+                    <div class="card-container tab-content" id="finalize">
+
+                        <div id="invoiceSummary"
+                            style="background: var(--bg); border-radius: var(--radius-md); padding: 24px; margin-bottom: 32px; display: none;">
+                            <div
+                                style="font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--primary); margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-clipboard-check"></i> Final Review
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;">
+                                <div>
+                                    <span
+                                        style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Customer</span>
+                                    <span id="summaryCustomer" style="font-weight: 600; font-size: 16px;">-</span>
+                                </div>
+                                <div>
+                                    <span
+                                        style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Invoice
+                                        #</span>
+                                    <span id="summaryInvoiceID" style="font-weight: 600; font-size: 16px;">-</span>
+                                </div>
+                                <div>
+                                    <span
+                                        style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Total
+                                        Items</span>
+                                    <span id="summaryItemsCount" style="font-weight: 600; font-size: 16px;">-</span>
+                                </div>
+                                <div>
+                                    <span
+                                        style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Grand
+                                        Total</span>
+                                    <span id="summaryGrandTotal"
+                                        style="font-weight: 800; font-size: 24px; color: var(--primary); display: block; line-height: 1;">₹0.00</span>
+                                </div>
+                            </div>
+
+                            <div
+                                style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 12px;">
+                                <div
+                                    style="display: flex; align-items: center; justify-content: center; background: #25D366; color: white; width: 32px; height: 32px; border-radius: 50%;">
+                                    <i class="fa-brands fa-whatsapp"></i>
+                                </div>
+                                <input type="checkbox" id="whatsappAutoSend" checked
+                                    style="width: 20px; height: 20px; cursor: pointer;">
+                                <label for="whatsappAutoSend"
+                                    style="cursor: pointer; margin-bottom: 0; font-size: 15px; color: var(--text);">Auto-send
+                                    to WhatsApp on save</label>
+                            </div>
+                        </div>
+
+                        <div class="field" style="margin-bottom: 40px;">
+                            <label for="remarks">Deal Notes (Optional)</label>
+                            <textarea name="remarks" id="remarks"
+                                placeholder="Add specific delivery instructions, references, or terms..."></textarea>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                            <button type="button" id="saveToSheetsBtn" class="next-btn primary"
+                                style="font-size: 17px; padding: 18px;">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Save & Finish
+                            </button>
+                            <button type="button" id="printInvoiceBtn" class="next-btn outline"
+                                style="font-size: 17px; padding: 18px;">
+                                <i class="fa-solid fa-print"></i> Generate PDF
+                            </button>
+                        </div>
+
+                        <button type="button" id="resetFormBtn" class="next-btn danger-outline" style="width: 100%;">
+                            <i class="fa-solid fa-rotate-left"></i> Discard & Start New
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+
+            <!-- ================= VIEW: ANALYTICS ================= -->
+            <div class="app-view active" id="view-analytics" style="position: relative;">
+
+                <!-- Loader Overlay -->
+                <div id="analytics-loader"
+                    style="display: none; position: absolute; inset: 0; background: var(--bg); z-index: 1000; flex-direction: column; justify-content: center; align-items: center;">
+                    <i class="fa-solid fa-chart-line fa-bounce"
+                        style="font-size: 64px; color: var(--primary); margin-bottom: 24px;"></i>
+                    <h2 style="margin: 0; color: var(--text); font-weight: 800; font-size: 28px;">Generating Insights...
+                    </h2>
+                    <p style="color: var(--text-muted); font-size: 15px; margin-top: 8px; font-weight: 500;">Crunching
+                        your sales data</p>
+                </div>
+
+                <div class="analytics-layout-container" id="analytics-content-wrapper"
+                    style="transition: opacity 0.5s;">
+                    <!-- LEFT NAV -->
+                    <aside class="analytics-side-nav hidden-nav" id="analyticsSideNav">
+                        <div class="sidebar-brand analytics-brand" style="margin-bottom: 24px; cursor: default;">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span>SaleSync</span>
+                        </div>
+
+                        <div class="nav-section">
+                            <div class="nav-label"><i class="fa-solid fa-crosshairs"></i> POINT IN TIME</div>
+                            <input type="date" id="analytics-exact-date"
+                                style="width: 100%; border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); padding: 8px 12px; font-size: 13px; font-family: inherit; margin-bottom: 8px;">
+                            <button id="clear-exact-date"
+                                style="width: 100%; background: transparent; border: 1px dashed var(--border); color: var(--text-muted); border-radius: 6px; padding: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s;">Clear
+                                Date</button>
+                        </div>
+
+                        <div class="nav-section"
+                            style="margin-top: 12px; border-top: 1px solid var(--border); padding-top: 16px;">
+                            <div class="nav-label" style="font-size: 12px; color: var(--primary);"><i
+                                    class="fa-solid fa-clock-rotate-left"></i> PERIOD TIMELINE</div>
+                        </div>
+
+                        <div class="nav-section">
+                            <div class="nav-label"><i class="fa-solid fa-calendar-days"></i> YEARS</div>
+                            <div id="analytics-years-list"
+                                style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;"></div>
+                        </div>
+
+                        <div class="nav-section">
+                            <div class="nav-label"><i class="fa-solid fa-clock"></i> MONTHS</div>
+                            <div id="analytics-months-list"
+                                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"></div>
+                        </div>
+
+                        <div class="nav-section">
+                            <div class="nav-label"><i class="fa-solid fa-layer-group"></i> SEGMENTS</div>
+                            <div id="analytics-segments-list"
+                                style="display: grid; grid-template-columns: 1fr; gap: 8px;"></div>
+                        </div>
+
+                        <div class="nav-section" style="margin-top: auto; padding-top: 16px;">
+                            <button class="nav-item yearly-btn active" id="yearly-analysis-btn"
+                                style="margin-bottom: 12px; width: 100%;">
+                                <i class="fa-solid fa-chart-line"></i> Yearly Analysis
+                            </button>
+                            <button class="nav-item back-btn" id="backToAppBtn" style="width: 100%;">
+                                <i class="fa-solid fa-arrow-left"></i> Back to Main App
+                            </button>
+                        </div>
+                    </aside>
+
+                    <!-- RIGHT CONTENT: Dashboard -->
+                    <div class="analytics-main-content">
+                        <!-- HEADER -->
+                        <div class="view-header"
+                            style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px; gap: 24px;">
+
+                            <div style="display: flex; align-items: flex-end; gap: 24px;">
+                                <!-- Toggle Sidebar Button -->
+                                <button id="analyticsToggleSidebarBtn" class="glassmorphism"
+                                    style="border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 16px; transition: all 0.2s;">
+                                    <i class="fa-solid fa-bolt"></i> <span class="hide-on-mobile">Time Period</span>
+                                </button>
+
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <div class="nav-label" style="margin:0;"><i class="fa-solid fa-chart-pie"></i>
+                                        QUARTERS</div>
+                                    <div id="analytics-quarters-list" style="display: flex; gap: 8px;"></div>
+                                </div>
+                            </div>
+
+                            <h2
+                                style="margin: 0; color: var(--primary); font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">
+                                SALES DASHBOARD</h2>
+                        </div>
+
+                        <!-- DASHBOARD GRID LAYOUT -->
+                        <div style="display: flex; flex-direction: column; gap: 20px; align-items: stretch;">
+
+                            <!-- TOP ROW: KPIs -->
+                            <div class="dashboard-kpi-column">
+                                <div class="dash-kpi-card glassmorphism">
+                                    <div class="kpi-header">
+                                        <div class="kpi-title">TOTAL REVENUE <i class="fa-solid fa-money-bill-wave"></i>
+                                        </div>
+                                    </div>
+                                    <h3 id="dash-total-revenue">₹0</h3>
+                                    <div class="kpi-compare"><span class="trend down"><i
+                                                class="fa-solid fa-arrow-trend-down"></i> -45.3%</span> VS BUDGET</div>
+                                </div>
+                                <div class="dash-kpi-card glassmorphism">
+                                    <div class="kpi-header">
+                                        <div class="kpi-title">TOTAL PROFIT <i class="fa-solid fa-chart-line"></i></div>
+                                    </div>
+                                    <h3 id="dash-total-profit">₹0</h3>
+                                    <div class="kpi-compare"><span class="trend down"><i
+                                                class="fa-solid fa-arrow-trend-down"></i> -53.3%</span> VS BUDGET</div>
+                                </div>
+                                <div class="dash-kpi-card glassmorphism">
+                                    <div class="kpi-header">
+                                        <div class="kpi-title">PROFIT % <i class="fa-solid fa-percent"></i></div>
+                                    </div>
+                                    <h3 id="dash-profit-margin">0%</h3>
+                                    <div class="kpi-compare"><span class="trend up"><i
+                                                class="fa-solid fa-arrow-trend-up"></i> +12.9%</span> VS BUDGET</div>
+                                </div>
+                                <div class="dash-kpi-card glassmorphism">
+                                    <div class="kpi-header">
+                                        <div class="kpi-title">TOTAL UNITS <i class="fa-solid fa-cart-shopping"></i>
+                                        </div>
+                                    </div>
+                                    <h3 id="dash-total-units">0</h3>
+                                    <div class="kpi-compare"><span class="trend down"><i
+                                                class="fa-solid fa-arrow-trend-down"></i> -51.3%</span> VS BUDGET</div>
+                                </div>
+                            </div>
+
+                            <!-- BOTTOM ROW: Charts Grid -->
+                            <div class="dashboard-charts-grid">
+                                <div class="dash-chart-card glassmorphism" style="grid-column: span 1; padding: 16px;">
+                                    <div class="chart-header" style="margin-bottom: 8px; font-size: 13px;">PROFIT BY
+                                        PRODUCTS</div>
+                                    <div class="chart-wrapper"><canvas id="revenueSegmentsChart"></canvas></div>
+                                </div>
+                                <div class="dash-chart-card glassmorphism" style="grid-column: span 1; padding: 16px;">
+                                    <div class="chart-header" style="margin-bottom: 8px; font-size: 13px;">PAYMENT MODE
+                                    </div>
+                                    <div class="chart-wrapper"><canvas id="inventoryStatusChart"></canvas></div>
+                                </div>
+                                <div class="dash-chart-card glassmorphism" style="grid-column: span 1; padding: 16px;">
+                                    <div class="chart-header" style="margin-bottom: 8px; font-size: 13px;">UNITS SOLD BY
+                                        PRODUCTS</div>
+                                    <div class="chart-wrapper"><canvas id="revenueQuarterlyChart"></canvas></div>
+                                </div>
+                                <div class="dash-chart-card glassmorphism" style="grid-column: span 1; padding: 16px;">
+                                    <div class="chart-header" style="margin-bottom: 8px; font-size: 13px;">INVENTORY BY
+                                        CATEGORY</div>
+                                    <div class="chart-wrapper"><canvas id="inventoryPieChart"></canvas></div>
+                                </div>
+                            </div>
+
+                        </div> <!-- /End Grid Layout -->
+                    </div> <!-- /End Main Content -->
+                </div>
+            </div>
+
+
+
+            <!-- ================= VIEW: INVENTORY ================= -->
+            <div class="app-view" id="view-inventory">
+                <div class="view-header">
+                    <h2>Inventory Management</h2>
+                    <p>Track your stock, add new items, and monitor low inventory levels in real-time.</p>
+                </div>
+
+                <div class="search-card">
+                    <!-- Dashboard widgets -->
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                        <div class="stat-card"
+                            style="background: var(--bg); padding: 16px; border-radius: var(--radius-md); border-left: 4px solid var(--primary); text-align: center;">
+                            <h3 id="stat-total-items" style="margin:0; font-size: 24px;">0</h3>
+                            <p style="margin:0; font-size: 12px; color: var(--text-muted);">Total Models</p>
+                        </div>
+                        <div class="stat-card"
+                            style="background: var(--bg); padding: 16px; border-radius: var(--radius-md); border-left: 4px solid #ef4444; text-align: center;">
+                            <h3 id="stat-low-stock" style="margin:0; font-size: 24px;">0</h3>
+                            <p style="margin:0; font-size: 12px; color: var(--text-muted);">Low Stock (&lt; 5)</p>
+                        </div>
+                        <div class="stat-card"
+                            style="background: var(--bg); padding: 16px; border-radius: var(--radius-md); border-left: 4px solid #3b82f6; text-align: center;">
+                            <h3 id="stat-over-stock" style="margin:0; font-size: 24px;">0</h3>
+                            <p style="margin:0; font-size: 12px; color: var(--text-muted);">Overstock (> 25)</p>
+                        </div>
+                        <div class="stat-card"
+                            style="background: var(--bg); padding: 16px; border-radius: var(--radius-md); border-left: 4px solid #10b981; text-align: center; cursor: pointer; transition: transform 0.2s ease;"
+                            id="addNewItemBtn">
+                            <i class="fa-solid fa-plus" style="font-size: 24px; color: #10b981;"></i>
+                            <p style="margin:5px 0 0 0; font-size: 12px; color: var(--text-muted);">Add New Item</p>
+                        </div>
+                    </div>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-top: 32px; margin-bottom: 24px;">
+                        <h3 style="margin: 0; font-size: 18px; color: var(--text);">Inventory List</h3>
+                        <div class="search-bar" style="display: flex; gap: 12px;">
+                            <button type="button" class="next-btn danger-outline" id="deleteSelectedBtn"
+                                style="padding: 10px 16px; font-size: 14px; display: none;"><i
+                                    class="fa-solid fa-trash"></i> Delete Selected</button>
+                            <input type="text" id="inventorySearch" placeholder="Search by Brand, Model or Category..."
+                                style="width: 250px; padding: 10px 16px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--input-bg); color: var(--text);" />
+                        </div>
+                    </div>
+
+                    <div id="inventoryResults" style="margin-top: 32px;">
+                        <div class="product-table-container">
+                            <table class="product-table" id="inventoryTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px; text-align: center;"><input type="checkbox"
+                                                id="selectAllInv" style="cursor: pointer; transform: scale(1.2);"></th>
+                                        <th>Item Description</th>
+                                        <th>Category</th>
+                                        <th>Stock</th>
+                                        <th>Purchase Cost</th>
+                                        <th>Selling Price</th>
+                                        <th style="width: 80px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventoryTableBody">
+                                    <tr>
+                                        <td colspan="7"
+                                            style="text-align:center; color: var(--text-muted); padding: 40px;">
+                                            <i class="fa-solid fa-box-open"
+                                                style="font-size: 32px; margin-bottom: 12px; opacity:0.5;"></i><br>
+                                            No items found. Click 'Add New Item' to start.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= VIEW: CRM ================= -->
+            <div class="app-view" id="view-crm">
+                <div class="view-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div>
+                        <h2>Customer Relationship Management</h2>
+                        <p>Manage customers, track EMI, and organize your client base.</p>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn-pill outline"
+                            style="background: var(--bg); color: var(--text); border: 1px solid var(--border);"><i
+                                class="fa-solid fa-clock"></i> EMI Tracking</button>
+                        <button class="next-btn primary" id="addCustomerBtn"
+                            onclick="showToast('Customers are added automatically via Sales.'); document.querySelector('[data-view=\'view-invoice\']').click();"><i
+                                class="fa-solid fa-user-plus"></i> Add Customer</button>
+                    </div>
+                </div>
+
+                <!-- CRM Sub-Tab Bar -->
+                <div class="crm-tabs">
+                    <button class="crm-tab-btn active" data-crm-tab="crm-tab-customers">
+                        <i class="fa-solid fa-users"></i> Customers
+                    </button>
+                    <button class="crm-tab-btn" data-crm-tab="crm-tab-search">
+                        <i class="fa-solid fa-magnifying-glass"></i> Search Invoices
+                    </button>
+                </div>
+
+                <!-- CRM Tab: Customers -->
+                <div id="crm-tab-customers" class="crm-tab-panel">
+
+                    <!-- CRM Main List View -->
+                    <div id="crm-list-view" style="margin-top: 24px;">
+                        <div class="search-card"
+                            style="padding: 24px; background: var(--card); border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px;">
+                                <div style="flex: 1; position: relative;">
+                                    <i class="fa-solid fa-magnifying-glass"
+                                        style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                                    <input type="text" id="crmSearchInput"
+                                        placeholder="Search by phone number or name..."
+                                        style="width: 100%; padding: 12px 16px 12px 40px; border-radius: 100px; border: 1px solid var(--border); background: var(--input-bg); font-size: 15px;">
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <select id="crmTagFilter"
+                                        style="padding: 12px 16px; border-radius: 100px; border: 1px solid var(--border); background: var(--bg); outline: none;">
+                                        <option value="all">All Tags</option>
+                                        <option value="New">New</option>
+                                        <option value="Returning">Returning</option>
+                                        <option value="Frequent">Frequent</option>
+                                        <option value="VIP">VIP</option>
+                                        <option value="High-Value">High-Value</option>
+                                        <option value="Credit">Credit</option>
+                                        <option value="Inactive">Inactive</option>
+                                        <option value="Risky">Risky</option>
+                                    </select>
+                                    <select id="crmSortFilter"
+                                        style="padding: 12px 16px; border-radius: 100px; border: 1px solid var(--border); background: var(--bg); outline: none;">
+                                        <option value="recent">Recent Activity</option>
+                                        <option value="spend">Highest Spending</option>
+                                        <option value="visits">Most Visits</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="product-table-container">
+                                <table class="product-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Customer</th>
+                                            <th>Phone</th>
+                                            <th>Status / Tags</th>
+                                            <th>Total Spend</th>
+                                            <th>Last Visit</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="crmTableBody">
+                                        <!-- Dynamically Populated -->
+                                        <tr>
+                                            <td colspan="6" style="text-align:center; padding: 40px;">
+                                                <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px;"></i><br>
+                                                Loading Customers...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CRM Profile View (Hidden by default) -->
+                    <div id="crm-profile-view" style="display: none; margin-top: 24px;">
+                        <button class="btn-pill"
+                            style="margin-bottom: 16px; background: transparent; border: 1px solid var(--border); color: var(--text);"
+                            onclick="document.getElementById('crm-profile-view').style.display='none'; document.getElementById('crm-list-view').style.display='block';">
+                            <i class="fa-solid fa-arrow-left"></i> Back to List
+                        </button>
+
+                        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px; align-items: start;">
+                            <!-- Left Panel: Profile & Actions -->
+                            <div style="display: flex; flex-direction: column; gap: 24px;">
+                                <!-- Identity Card -->
+                                <div
+                                    style="background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; text-align: center; position: relative; overflow: hidden;">
+                                    <div
+                                        style="position: absolute; top: 0; left: 0; right: 0; height: 60px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(16, 185, 129, 0.1));">
+                                    </div>
+                                    <div
+                                        style="width: 80px; height: 80px; border-radius: 50%; background: var(--bg); border: 4px solid var(--card); margin: 0 auto 16px auto; position: relative; display: flex; align-items: center; justify-content: center; font-size: 32px; color: var(--primary); box-shadow: var(--shadow-sm); z-index: 1;">
+                                        <i class="fa-solid fa-user"></i>
+                                    </div>
+                                    <h3 id="crmProfileName"
+                                        style="margin: 0 0 4px 0; font-size: 20px; color: var(--text);">
+                                        Raj Kumar</h3>
+                                    <p id="crmProfilePhone"
+                                        style="margin: 0 0 16px 0; color: var(--text-muted); font-size: 14px;">+91
+                                        9876543210
+                                    </p>
+                                    <div id="crmProfileTags"
+                                        style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                                        <span
+                                            style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 700;"><i
+                                                class="fa-solid fa-crown"></i> VIP</span>
+                                        <span
+                                            style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 700;"><i
+                                                class="fa-solid fa-hand-holding-dollar"></i> EMI</span>
+                                        <!-- Example of a high risk tag, hidden for now -->
+                                        <!-- <span style="background: rgba(239, 68, 68, 0.1); color: #ef4444; padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 700;"><i class="fa-solid fa-triangle-exclamation"></i> High Risk</span> -->
+                                    </div>
+                                    <hr style="border: 0; border-top: 1px dashed var(--border); margin: 24px 0;">
+                                    <div style="text-align: left; font-size: 13px;">
+                                        <div id="crmProfileAddress" style="margin-bottom: 12px;"><i
+                                                class="fa-solid fa-location-dot"
+                                                style="width: 20px; color: var(--text-muted); text-align: center;"></i>
+                                            123
+                                            Main Street, New Delhi, 110001</div>
+                                        <div id="crmProfileNotes"><i class="fa-solid fa-note-sticky"
+                                                style="width: 20px; color: var(--text-muted); text-align: center;"></i>
+                                            Reliable customer, prefers Samsung phones. Uses EMI mostly.</div>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Actions -->
+                                <div
+                                    style="background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px;">
+                                    <h4 style="margin: 0 0 16px 0; color: var(--text); font-size: 16px;">Quick Actions
+                                    </h4>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                        <button class="btn-pill" id="crmActionWifi"
+                                            style="background: #25D366; color: white; border: none; justify-content: center; padding: 10px;"><i
+                                                class="fa-brands fa-whatsapp" style="font-size: 16px;"></i>
+                                            WhatsApp</button>
+                                        <button class="btn-pill" id="crmActionCall"
+                                            style="background: #3b82f6; color: white; border: none; justify-content: center; padding: 10px;"><i
+                                                class="fa-solid fa-phone" style="font-size: 14px;"></i> Call</button>
+                                        <button class="btn-pill" id="crmActionInvoice"
+                                            style="background: var(--primary); color: white; border: none; justify-content: center; padding: 10px; grid-column: 1 / -1;"><i
+                                                class="fa-solid fa-file-invoice"></i> Generate Invoice</button>
+                                        <button class="btn-pill" id="crmActionPayment"
+                                            style="background: var(--bg); color: var(--text); border: 1px solid var(--border); justify-content: center; padding: 10px; grid-column: 1 / -1;"><i
+                                                class="fa-solid fa-indian-rupee-sign"></i> Record Payment</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Panel: History -->
+                            <div style="display: flex; flex-direction: column; gap: 24px;">
+
+                                <!-- EMI Tracking Block -->
+                                <div id="crmEmiBlock"
+                                    style="background: var(--card); border: 1px solid #f59e0b33; border-top: 4px solid #f59e0b; border-radius: var(--radius-lg); padding: 24px; box-shadow: 0 4px 12px rgba(245,158,11,0.05); display: none;">
+                                    <h4
+                                        style="margin: 0 0 20px 0; color: #b45309; font-size: 16px; display: flex; justify-content: space-between; align-items: center;">
+                                        <span><i class="fa-solid fa-hand-holding-dollar"></i> EMI Tracking</span>
+                                        <span
+                                            style="font-size: 12px; background: #fef3c7; color: #d97706; padding: 4px 8px; border-radius: 12px;">Active</span>
+                                    </h4>
+                                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                                        <div>
+                                            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">
+                                                Total Amount</div>
+                                            <div style="font-size: 18px; font-weight: 700; color: var(--text);">₹25,000
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">
+                                                Amount Paid</div>
+                                            <div style="font-size: 18px; font-weight: 700; color: #10b981;">₹10,000
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">
+                                                Remaining</div>
+                                            <div style="font-size: 18px; font-weight: 700; color: #ef4444;">₹15,000
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">
+                                                Next
+                                                Due</div>
+                                            <div style="font-size: 16px; font-weight: 700; color: #f59e0b;">15 Oct 2025
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 20px;">
+                                        <div
+                                            style="width: 100%; height: 8px; background: var(--bg); border-radius: 100px; overflow: hidden; border: 1px solid var(--border);">
+                                            <div style="height: 100%; width: 40%; background: #10b981;"></div>
+                                        </div>
+                                        <div
+                                            style="text-align: right; font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                                            40% Paid</div>
+                                    </div>
+                                </div>
+
+                                <!-- Purchase History Table -->
+                                <div
+                                    style="background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; flex: 1;">
+                                    <h4 style="margin: 0 0 20px 0; color: var(--text); font-size: 16px;"><i
+                                            class="fa-solid fa-clock-rotate-left"
+                                            style="color: var(--primary); margin-right: 8px;"></i> Purchase History</h4>
+                                    <div class="product-table-container">
+                                        <table class="product-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Invoice #</th>
+                                                    <th>Items</th>
+                                                    <th>Amount</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="crmPurchaseHistory">
+                                                <!-- Dynamically populated -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- /crm-tab-customers -->
+
+                <!-- CRM Tab: Search Invoices -->
+                <div id="crm-tab-search" class="crm-tab-panel" style="display: none;">
+                    <div class="view-header" style="margin-top: 24px;">
+                        <h2>Search Invoices</h2>
+                        <p>Search strictly by Invoice ID, Phone, or Customer to review logs.</p>
+                    </div>
+
+                    <div class="search-card">
+                        <div class="form-grid" style="grid-template-columns: 1fr 2fr auto; align-items: flex-end;">
+                            <div class="field">
+                                <label for="searchType">Look Up By</label>
+                                <select id="searchType">
+                                    <option value="phone">Phone Number</option>
+                                    <option value="id">Invoice ID</option>
+                                    <option value="name">Customer Name</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="searchInput">Query String</label>
+                                <input type="text" id="searchInput" placeholder="Enter query..." />
+                            </div>
+                            <div class="field" style="display: flex; gap: 12px; align-items: center;">
+                                <button type="button" id="searchBtn" class="btn-pill primary" style="flex: 1;">
+                                    <i class="fa-solid fa-magnifying-glass"></i> Search Invoices
+                                </button>
+                                <button type="button" id="resetSearchBtn" class="btn-pill outline">
+                                    <i class="fa-solid fa-rotate-left"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="searchResults" style="margin-top: 32px;">
+                            <div
+                                style="text-align: center; color: var(--text-muted); padding: 60px 20px; background: var(--bg); border-radius: var(--radius-md); border: 1px dashed var(--border);">
+                                <i class="fa-solid fa-server"
+                                    style="font-size: 40px; margin-bottom: 16px; display: block; color: var(--primary); opacity: 0.5;"></i>
+                                Enter a search query to pull records from the central database.
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- /crm-tab-search -->
+
+            </div>
+
+            <!-- ================= VIEW: SETTINGS ================= -->
+            <div class="app-view" id="view-settings">
+                <div class="view-header">
+                    <h2>Application Settings</h2>
+                    <p>Configure business details, preferences, and system parameters.</p>
+                </div>
+
+                <div
+                    style="display: grid; grid-template-columns: 240px 1fr; gap: 32px; align-items: start; margin-top: 24px;">
+                    <!-- Settings Navigation -->
+                    <div
+                        style="display: flex; flex-direction: column; gap: 8px; background: var(--card); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+                        <button class="settings-tab-btn active" data-target="set-business"
+                            style="text-align: left; padding: 12px 16px; border: none; background: rgba(168, 85, 247, 0.1); color: var(--primary); border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-store" style="width: 20px;"></i> Business Info
+                        </button>
+                        <button class="settings-tab-btn" data-target="set-invoice"
+                            style="text-align: left; padding: 12px 16px; border: none; background: transparent; color: var(--text); border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-file-invoice" style="width: 20px;"></i> Invoice Settings
+                        </button>
+                        <button class="settings-tab-btn" data-target="set-users"
+                            style="text-align: left; padding: 12px 16px; border: none; background: transparent; color: var(--text); border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-user-shield" style="width: 20px;"></i> Users & Roles
+                        </button>
+                        <button class="settings-tab-btn" data-target="set-payments"
+                            style="text-align: left; padding: 12px 16px; border: none; background: transparent; color: var(--text); border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-credit-card" style="width: 20px;"></i> Payments
+                        </button>
+                        <button class="settings-tab-btn" data-target="set-data"
+                            style="text-align: left; padding: 12px 16px; border: none; background: transparent; color: var(--text); border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-database" style="width: 20px;"></i> Data Mgmt
+                        </button>
+                        <button class="settings-tab-btn" data-target="set-notifications"
+                            style="text-align: left; padding: 12px 16px; border: none; background: transparent; color: var(--text); border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-bell" style="width: 20px;"></i> Notifications
+                        </button>
+                        <button class="settings-tab-btn" data-target="set-security"
+                            style="text-align: left; padding: 12px 16px; border: none; background: transparent; color: var(--text); border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-lock" style="width: 20px;"></i> Security
+                        </button>
+                        <button class="settings-tab-btn" data-target="set-theme"
+                            style="text-align: left; padding: 12px 16px; border: none; background: transparent; color: var(--text); border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-moon" style="width: 20px;"></i> Theme / UI
+                        </button>
+                        <button class="settings-tab-btn" data-target="set-advanced"
+                            style="text-align: left; padding: 12px 16px; border: none; background: transparent; color: var(--text); border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-code" style="width: 20px;"></i> Advanced / Dev
+                        </button>
+                    </div>
+
+                    <!-- Settings Content Panels -->
+                    <div
+                        style="background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 32px; min-height: 450px;">
+
+                        <!-- Panel: Theme / UI -->
+                        <div id="set-theme" class="settings-panel" style="display: none;">
+                            <h3 style="margin: 0 0 24px 0; color: var(--text); font-size: 20px;"><i
+                                    class="fa-solid fa-moon" style="color: var(--primary); margin-right: 8px;"></i>
+                                Visual Preferences</h3>
+                            <div class="form-grid">
+                                <div class="field" style="grid-column: 1 / -1;">
+                                    <label>Application Theme</label>
+                                    <button class="btn-pill outline" id="themeToggle"
+                                        style="margin-top: 8px; display: inline-flex; align-items: center; gap: 8px;">
+                                        <i class="fa-solid fa-moon" id="themeIcon"></i> Toggle Dark Mode
+                                    </button>
+                                    <span
+                                        style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 12px;">Switches
+                                        between Light and Dark mode globally. Your preference is saved locally.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel: Business Info -->
+                        <div id="set-business" class="settings-panel active" style="display: block;">
+                            <h3 style="margin: 0 0 24px 0; color: var(--text); font-size: 20px;"><i
+                                    class="fa-solid fa-store" style="color: var(--primary); margin-right: 8px;"></i>
+                                Business Information</h3>
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label>Shop Name</label>
+                                    <input type="text" id="setShopName" placeholder="e.g. ElectroWorld Store">
+                                </div>
+                                <div class="field">
+                                    <label>Owner Name</label>
+                                    <input type="text" id="setOwnerName" placeholder="First and Last Name">
+                                </div>
+                                <div class="field">
+                                    <label>GST Number</label>
+                                    <input type="text" id="setGstNumber" placeholder="22AAAAA0000A1Z5">
+                                </div>
+                                <div class="field" style="grid-column: 1 / -1;">
+                                    <label>Shop Address & Contact</label>
+                                    <textarea id="setShopAddress"
+                                        placeholder="Full address and phone for invoices"></textarea>
+                                </div>
+                                <div class="field" style="grid-column: 1 / -1;">
+                                    <label>Logo Upload (Used in invoices) 👉</label>
+                                    <div
+                                        style="border: 2px dashed var(--border); padding: 24px; text-align: center; border-radius: 8px; cursor: pointer; color: var(--primary); font-weight: 600;">
+                                        <i class="fa-solid fa-upload"
+                                            style="font-size: 24px; display: block; margin-bottom: 8px;"></i>
+                                        Click to browse or drag & drop logo image
+                                    </div>
+                                    <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">Recommended:
+                                        PNG or JPG, max 2MB, square or landscape.</p>
+                                </div>
+                            </div>
+                            <div style="margin-top: 32px; text-align: right;">
+                                <button type="button" class="next-btn primary" onclick="saveBusinessInfo()">Save
+                                    Changes</button>
+                            </div>
+                        </div>
+
+                        <!-- Panel: Invoice Settings -->
+                        <div id="set-invoice" class="settings-panel" style="display: none;">
+                            <h3 style="margin: 0 0 24px 0; color: var(--text); font-size: 20px;"><i
+                                    class="fa-solid fa-file-invoice"
+                                    style="color: var(--primary); margin-right: 8px;"></i> Invoice Controls</h3>
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label>Default GST % (Auto-apply)</label>
+                                    <select id="setDefaultGst">
+                                        <option value="0">0% (Exempt)</option>
+                                        <option value="5">5%</option>
+                                        <option value="12">12%</option>
+                                        <option value="18" selected>18%</option>
+                                        <option value="28">28%</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Invoice Format</label>
+                                    <select id="setInvoiceFormat">
+                                        <option value="simple">Simple (Compact)</option>
+                                        <option value="detailed">Detailed (With Specs & IMEI)</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Invoice Prefix</label>
+                                    <input type="text" id="setInvoicePrefix" value="INV-">
+                                    <span
+                                        style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 4px;">e.g.
+                                        INV-001, INV-002</span>
+                                </div>
+                            </div>
+                            <div style="margin-top: 32px; text-align: right;">
+                                <button type="button" class="next-btn primary" onclick="saveInvoiceSettings()">Save
+                                    Changes</button>
+                            </div>
+                        </div>
+
+                        <!-- Panel: Users & Roles -->
+                        <div id="set-users" class="settings-panel" style="display: none;">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                                <h3 style="margin: 0; color: var(--text); font-size: 20px;"><i
+                                        class="fa-solid fa-user-shield"
+                                        style="color: var(--primary); margin-right: 8px;"></i> Access Control</h3>
+                                <button class="btn-pill outline"><i class="fa-solid fa-plus"></i> Add User</button>
+                            </div>
+                            <table class="product-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Role</th>
+                                        <th>Permissions</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Jitendra</td>
+                                        <td><span
+                                                style="background:var(--primary-glow); color:var(--primary); padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">Admin</span>
+                                        </td>
+                                        <td style="font-size:12px;">Full control across app</td>
+                                        <td><button
+                                                style="border:none;background:none;color:var(--text-muted);cursor:pointer;"><i
+                                                    class="fa-solid fa-pen"></i></button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Kunal</td>
+                                        <td><span
+                                                style="background:#10b98122; color:#10b981; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">Staff</span>
+                                        </td>
+                                        <td style="font-size:12px;">Sales and Invoicing only</td>
+                                        <td><button
+                                                style="border:none;background:none;color:var(--text-muted);cursor:pointer;"><i
+                                                    class="fa-solid fa-pen"></i></button></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Priya</td>
+                                        <td><span
+                                                style="background:#3b82f622; color:#3b82f6; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700;">Accountant</span>
+                                        </td>
+                                        <td style="font-size:12px;">Reports and Analytics only</td>
+                                        <td><button
+                                                style="border:none;background:none;color:var(--text-muted);cursor:pointer;"><i
+                                                    class="fa-solid fa-pen"></i></button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Panel: Payments -->
+                        <div id="set-payments" class="settings-panel" style="display: none;">
+                            <h3 style="margin: 0 0 24px 0; color: var(--text); font-size: 20px;"><i
+                                    class="fa-solid fa-credit-card"
+                                    style="color: var(--primary); margin-right: 8px;"></i> Payment Settings</h3>
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label>Business UPI ID</label>
+                                    <input type="text" placeholder="store@bankname">
+                                </div>
+                                <div class="field">
+                                    <label>Default EMI Interest (% Annual)</label>
+                                    <input type="number" placeholder="18" value="18">
+                                </div>
+                                <div class="field" style="grid-column: 1 / -1;">
+                                    <label>Bank Account Details (Printed on Invoice)</label>
+                                    <textarea placeholder="Bank Name: &#10;A/C No: &#10;IFSC: " rows="4"></textarea>
+                                </div>
+                            </div>
+                            <div style="margin-top: 32px; text-align: right;">
+                                <button class="next-btn primary">Save Changes</button>
+                            </div>
+                        </div>
+
+                        <!-- Panel: Data Management -->
+                        <div id="set-data" class="settings-panel" style="display: none;">
+                            <h3 style="margin: 0 0 24px 0; color: var(--text); font-size: 20px;"><i
+                                    class="fa-solid fa-database" style="color: var(--primary); margin-right: 8px;"></i>
+                                Data Management</h3>
+                            <div
+                                style="background: rgba(59, 130, 246, 0.05); border: 1px dashed rgba(59,130,246,0.5); padding: 16px; border-radius: 8px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <h4 style="margin:0 0 4px 0; color: #1d4ed8;">Export Sales Data</h4>
+                                    <p style="font-size:12px; margin:0; color:#3b82f6;">Download a complete Excel report
+                                        of all invoices.</p>
+                                </div>
+                                <button class="btn-pill" style="background:#3b82f6;color:white;border:none;"><i
+                                        class="fa-solid fa-file-excel"></i> Export CSV</button>
+                            </div>
+                            <div
+                                style="background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16,185,129,0.5); padding: 16px; border-radius: 8px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <h4 style="margin:0 0 4px 0; color: #047857;">Backup Local Data</h4>
+                                    <p style="font-size:12px; margin:0; color:#10b981;">Save local app configurations
+                                        and states.</p>
+                                </div>
+                                <button class="btn-pill" style="background:#10b981;color:white;border:none;"><i
+                                        class="fa-solid fa-download"></i> Backup Backup</button>
+                            </div>
+                            <div
+                                style="background: rgba(239, 68, 68, 0.05); border: 1px dashed rgba(239,68,68,0.5); padding: 16px; border-radius: 8px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">
+                                <div>
+                                    <h4 style="margin:0 0 4px 0; color: #b91c1c;">Clear Demo Data 👉</h4>
+                                    <p style="font-size:12px; margin:0; color:#ef4444; font-weight:600;">VERY IMPORTANT
+                                        if using Google Sheets master data.</p>
+                                </div>
+                                <button class="btn-pill" style="background:#ef4444;color:white;border:none;"><i
+                                        class="fa-solid fa-trash-can"></i> Clear Data</button>
+                            </div>
+                        </div>
+
+                        <!-- Panel: Notifications -->
+                        <div id="set-notifications" class="settings-panel" style="display: none;">
+                            <h3 style="margin: 0 0 24px 0; color: var(--text); font-size: 20px;"><i
+                                    class="fa-solid fa-bell" style="color: var(--primary); margin-right: 8px;"></i>
+                                Notification Checks</h3>
+                            <div style="display: flex; flex-direction: column; gap: 16px;">
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border);">
+                                    <div>
+                                        <div style="font-weight: 600;">EMI Reminders</div>
+                                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Notify
+                                            when customer EMI is due soon</div>
+                                    </div>
+                                    <div
+                                        style="position: relative; width: 44px; height: 24px; background: var(--primary); border-radius: 12px; cursor: pointer;">
+                                        <div
+                                            style="position: absolute; right: 2px; top: 2px; width: 20px; height: 20px; background: white; border-radius: 50%;">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border);">
+                                    <div>
+                                        <div style="font-weight: 600;">Low Stock Alerts</div>
+                                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Sia
+                                            will alert when items drop below threshold</div>
+                                    </div>
+                                    <div
+                                        style="position: relative; width: 44px; height: 24px; background: var(--primary); border-radius: 12px; cursor: pointer;">
+                                        <div
+                                            style="position: absolute; right: 2px; top: 2px; width: 20px; height: 20px; background: white; border-radius: 50%;">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border);">
+                                    <div>
+                                        <div style="font-weight: 600;">Daily Sales Report</div>
+                                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Send
+                                            end of day summary to owner</div>
+                                    </div>
+                                    <div
+                                        style="position: relative; width: 44px; height: 24px; background: var(--border); border-radius: 12px; cursor: pointer;">
+                                        <div
+                                            style="position: absolute; left: 2px; top: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel: Security -->
+                        <div id="set-security" class="settings-panel" style="display: none;">
+                            <h3 style="margin: 0 0 24px 0; color: var(--text); font-size: 20px;"><i
+                                    class="fa-solid fa-lock" style="color: var(--primary); margin-right: 8px;"></i>
+                                Security Settings</h3>
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label>Change Master Password</label>
+                                    <input type="password" placeholder="Enter new password">
+                                </div>
+                                <div class="field">
+                                    <label>Confirm Password</label>
+                                    <input type="password" placeholder="Confirm new password">
+                                </div>
+                                <div class="field" style="grid-column: 1 / -1;">
+                                    <label>Google Apps Script API Key (Hidden)</label>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="password" value="****************************************" disabled
+                                            style="flex: 1;">
+                                        <button class="btn-pill outline"><i class="fa-solid fa-pen"></i></button>
+                                    </div>
+                                    <span
+                                        style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 4px;">Required
+                                        for syncing data with Google Sheets backend.</span>
+                                </div>
+                            </div>
+                            <div
+                                style="margin-top: 32px; display: flex; justify-content: space-between; align-items: center;">
+                                <button class="btn-pill"
+                                    style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444;"><i
+                                        class="fa-solid fa-right-from-bracket"></i> Session Logout</button>
+                                <button class="next-btn primary">Update Security</button>
+                            </div>
+                        </div>
+
+                        <!-- Panel: Advanced / Dev Mode -->
+                        <div id="set-advanced" class="settings-panel" style="display: none;">
+                            <h3 style="margin: 0 0 24px 0; color: var(--text); font-size: 20px;"><i
+                                    class="fa-solid fa-code" style="color: var(--primary); margin-right: 8px;"></i>
+                                Developer Settings</h3>
+                            <div class="form-grid">
+                                <div class="field" style="grid-column: 1 / -1;">
+                                    <label>Application Developer Mode</label>
+                                    <button class="btn-pill outline" id="devModeToggle"
+                                        style="margin-top: 8px; display: inline-flex; align-items: center; gap: 8px;">
+                                        <i class="fa-solid fa-terminal" id="devModeIcon"></i> Toggle Developer Mode
+                                    </button>
+                                    <span
+                                        style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 12px;">Allows
+                                        bypassing stock restrictions and manual cost entry. Use with caution.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- SIA AI VIEW (Hidden by default) -->
+            <div class="app-view" id="view-sia" style="background: #fdfcff;">
+                <div style="height: 100%; position: relative; display: flex; flex-direction: column;">
+
+                    <!-- Header Section -->
+                    <div
+                        style="margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 24px; border-bottom: 1px solid rgba(168, 85, 247, 0.1);">
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <div
+                                style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #a855f7, #ec4899); color: white; width: 60px; height: 60px; border-radius: 18px; font-size: 28px; box-shadow: 0 10px 25px rgba(168,85,247,0.35);">
+                                <i class="fa-solid fa-sparkles"></i>
+                            </div>
+                            <div>
+                                <h2
+                                    style="margin: 0 0 6px 0; font-size: 32px; color: #0f172a; font-weight: 900; letter-spacing: -1px; display: flex; align-items: center; gap: 12px;">
+                                    Sia AI
+                                    <span
+                                        style="font-size: 11px; font-weight: 800; background: linear-gradient(to right, #e0e7ff, #ede9fe); color: #4338ca; padding: 6px 14px; border-radius: 100px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 2px 6px rgba(67,56,202,0.1);">Beta</span>
+                                </h2>
+                                <div style="font-size: 15px; color: #64748b; font-weight: 600; margin-top: 2px;">Your
+                                    intelligent sales co-pilot. <span
+                                        style="background: rgba(16, 185, 129, 0.1); color: #059669; padding: 4px 10px; border-radius: 100px; font-weight: 700; font-size: 12px; margin-left: 8px;"><i
+                                            class="fa-solid fa-circle" style="font-size: 8px; margin-right: 4px;"></i>
+                                        Online</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Sync Button Moved to Header for better space usage, styled as a premium pill -->
+                        <button type="button" id="sia-sync-btn" onclick="syncSiaWithSheets()" class="btn-pill primary"
+                            style="padding: 16px 32px; font-size: 16px; font-weight: 800; background: linear-gradient(135deg, #6366f1, #a855f7); border: none; color: white; border-radius: 100px; box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4); text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.3s; display: flex; align-items: center; gap: 12px;"
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 12px 25px rgba(99, 102, 241, 0.5)'"
+                            onmouseout="this.style.transform='none'; this.style.boxShadow='0 8px 20px rgba(99, 102, 241, 0.4)'">
+                            <i class="fa-solid fa-rotate-right" style="font-size: 18px;"></i> Sync Master Data
+                        </button>
+                    </div>
+
+                    <!-- Main Workspace -->
+                    <div style="display: grid; grid-template-columns: 320px 1fr; gap: 32px; flex: 1; min-height: 0;">
+
+                        <!-- LEFT COLUMN: Insights & Alerts Dashboard -->
+                        <div
+                            style="display: flex; flex-direction: column; gap: 24px; overflow-y: auto; padding-right: 8px; padding-bottom: 20px;">
+
+                            <h3
+                                style="margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: #94a3b8; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-chart-pie" style="color: #cbd5e1;"></i> Real-Time Dashboard
+                            </h3>
+
+                            <!-- Smart Alerts -->
+                            <div style="background: white; border-radius: 24px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.03); border: 1px solid rgba(245, 158, 11, 0.15); position: relative; overflow: hidden; transition: transform 0.2s;"
+                                onmouseover="this.style.transform='translateY(-2px)'"
+                                onmouseout="this.style.transform='none'">
+                                <div
+                                    style="position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: #f59e0b;">
+                                </div>
+                                <h4
+                                    style="margin: 0 0 20px 0; color: #334155; font-weight: 900; font-size: 17px; display: flex; align-items: center;">
+                                    <span
+                                        style="background: #fffbeb; width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 12px;"><i
+                                            class="fa-solid fa-bell"
+                                            style="color: #f59e0b; font-size: 18px;"></i></span> Needs Attention
+                                </h4>
+                                <div id="sia-alerts-container"
+                                    style="display: flex; flex-direction: column; gap: 12px;">
+                                    <!-- Alert Item -->
+                                    <div
+                                        style="background: linear-gradient(135deg, #fffbeb, transparent); border: 1px solid #fde68a; padding: 20px; border-radius: 16px;">
+                                        <div
+                                            style="color: #d97706; font-weight: 800; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fa-solid fa-box-open"></i> Overstock
+                                        </div>
+                                        <div
+                                            style="color: #92400e; font-size: 13.5px; font-weight: 500; line-height: 1.5;">
+                                            You have models >25 units. Consider running a clearance sale to free up
+                                            capital.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Auto Suggestions -->
+                            <div style="background: white; border-radius: 24px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.03); border: 1px solid rgba(16, 185, 129, 0.15); position: relative; overflow: hidden; transition: transform 0.2s;"
+                                onmouseover="this.style.transform='translateY(-2px)'"
+                                onmouseout="this.style.transform='none'">
+                                <div
+                                    style="position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: #10b981;">
+                                </div>
+                                <h4
+                                    style="margin: 0 0 20px 0; color: #334155; font-weight: 900; font-size: 17px; display: flex; align-items: center;">
+                                    <span
+                                        style="background: #f0fdf4; width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 12px;"><i
+                                            class="fa-solid fa-lightbulb"
+                                            style="color: #10b981; font-size: 18px;"></i></span> Actionable Insights
+                                </h4>
+                                <div id="sia-suggestions-container"
+                                    style="display: flex; flex-direction: column; gap: 12px;">
+                                    <!-- Insight Item -->
+                                    <div
+                                        style="background: linear-gradient(135deg, #f0fdf4, transparent); border: 1px solid #bbf7d0; padding: 20px; border-radius: 16px;">
+                                        <div
+                                            style="color: #059669; font-weight: 800; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fa-solid fa-arrow-trend-up"></i> Profit Tip
+                                        </div>
+                                        <div
+                                            style="color: #065f46; font-size: 13.5px; font-weight: 500; line-height: 1.5;">
+                                            Focus on pushing Bose Audio units today. It earns you a massive ₹1800 profit
+                                            per unit sold!</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- RIGHT COLUMN: Chat Interface -->
+                        <div
+                            style="display: flex; flex-direction: column; padding: 0; overflow: hidden; border: 1px solid rgba(168, 85, 247, 0.15); box-shadow: 0 20px 60px rgba(168, 85, 247, 0.08); height: 100%; max-height: 100%; border-radius: 32px; background: white; position: relative;">
+
+                            <!-- Chat Window Header -->
+                            <div
+                                style="padding: 24px 32px; border-bottom: 1px solid rgba(0,0,0,0.04); background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); z-index: 10; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0;">
+                                <div style="display: flex; gap: 16px; align-items: center;">
+                                    <div style="position: relative;">
+                                        <div
+                                            style="width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #a855f7, #ec4899); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(168,85,247,0.3);">
+                                            <i class="fa-solid fa-robot" style="color: white; font-size: 20px;"></i>
+                                        </div>
+                                        <div
+                                            style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border-radius: 50%; background: #10b981; border: 2px solid white;">
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column;">
+                                        <span style="font-weight: 800; color: #1e293b; font-size: 18px;">Chat with
+                                            Sia</span>
+                                        <span style="font-weight: 600; color: #94a3b8; font-size: 13px;">Analyzing your
+                                            central database...</span>
+                                    </div>
+                                </div>
+                                <button class="btn-pill outline"
+                                    style="padding: 10px 20px; font-size: 13px; font-weight: 700; color: #64748b; border: 2px solid #f1f5f9; background: white; transition: all 0.2s;"
+                                    onmouseover="this.style.background='#f1f5f9'"
+                                    onmouseout="this.style.background='white'"
+                                    onclick="document.getElementById('sia-chat-history').innerHTML='';"><i
+                                        class="fa-solid fa-broom" style="margin-right: 8px;"></i> Clear</button>
+                            </div>
+
+                            <!-- Chat History -->
+                            <div id="sia-chat-history"
+                                style="flex: 1; padding: 40px 32px; overflow-y: auto; display: flex; flex-direction: column; gap: 32px; background: #fafaf9; scroll-behavior: smooth;">
+
+                                <!-- Greeting Bubble -->
+                                <div style="display: flex; gap: 20px; align-items: flex-end; max-width: 85%;">
+                                    <div
+                                        style="width: 48px; height: 48px; border-radius: 16px; background: linear-gradient(135deg, #a855f7, #ec4899); color: white; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; box-shadow: 0 8px 20px rgba(168,85,247,0.3);">
+                                        <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Sia&colors=white"
+                                            style="width: 32px; height: 32px; filter: brightness(2);">
+                                    </div>
+                                    <div
+                                        style="background: white; padding: 24px; border-radius: 28px 28px 28px 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border: 1px solid #f1f5f9; position: relative;">
+                                        <p
+                                            style="margin: 0; font-size: 16px; line-height: 1.7; color: #334155; font-weight: 500;">
+                                            Greetings! I'm Sia. ✨<br><br>I can instantly analyze your thousands of sales
+                                            rows, track inventory gaps, and uncover hidden profit opportunities. Ask me
+                                            a question below or pick a suggestion!
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quick Prompts Horizontal Scroller -->
+                            <div
+                                style="padding: 24px 32px 16px 32px; background: white; border-top: 1px solid rgba(0,0,0,0.04);">
+                                <div
+                                    style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; flex-wrap: nowrap; scrollbar-width: none;">
+                                    <style>
+                                        .prompt-pill {
+                                            padding: 12px 24px;
+                                            border-radius: 100px;
+                                            border: 1px solid #e2e8f0;
+                                            background: white;
+                                            font-size: 14px;
+                                            font-weight: 700;
+                                            color: #475569;
+                                            cursor: pointer;
+                                            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                                            white-space: nowrap;
+                                            flex-shrink: 0;
+                                            display: flex;
+                                            align-items: center;
+                                            gap: 10px;
+                                            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+                                        }
+
+                                        .prompt-pill:hover {
+                                            background: #fffbeb;
+                                            border-color: #fde68a;
+                                            color: #b45309;
+                                            transform: translateY(-4px);
+                                            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.15);
+                                        }
+
+                                        .prompt-pill i {
+                                            color: #f59e0b;
+                                            font-size: 16px;
+                                        }
+                                    </style>
+                                    <button class="prompt-pill"
+                                        onclick="document.getElementById('sia-chat-input').value='Show me total revenue'; window.askSia();"><i
+                                            class="fa-solid fa-chart-line" style="color: #10b981;"></i> Total
+                                        Revenue</button>
+                                    <button class="prompt-pill"
+                                        onclick="document.getElementById('sia-chat-input').value='Which items reflect lowest stock?'; window.askSia();"><i
+                                            class="fa-solid fa-boxes-stacked" style="color: #ef4444;"></i> Low
+                                        Stock</button>
+                                    <button class="prompt-pill"
+                                        onclick="document.getElementById('sia-chat-input').value='Who is my top spender?'; window.askSia();"><i
+                                            class="fa-solid fa-crown" style="color: #f59e0b;"></i> Top Customer</button>
+                                    <button class="prompt-pill"
+                                        onclick="document.getElementById('sia-chat-input').value='Tell me about my profits'; window.askSia();"><i
+                                            class="fa-solid fa-money-bill-trend-up" style="color: #8b5cf6;"></i> Profit
+                                        Margins</button>
+                                    <button class="prompt-pill"
+                                        onclick="document.getElementById('sia-chat-input').value='What should I put on flash sale?'; window.askSia();"><i
+                                            class="fa-solid fa-bolt" style="color: #eab308;"></i> Flash Sale
+                                        Ideas</button>
+                                </div>
+                            </div>
+
+                            <!-- Chat Input Area -->
+                            <div
+                                style="padding: 16px 32px 32px 32px; background: white; display: flex; gap: 20px; align-items: center;">
+                                <div style="flex: 1; position: relative;">
+                                    <div
+                                        style="position: absolute; left: 24px; top: 50%; transform: translateY(-50%); color: #a855f7;">
+                                        <i class="fa-solid fa-sparkles"></i>
+                                    </div>
+                                    <input type="text" id="sia-chat-input"
+                                        placeholder="Type a prompt or command for Sia..."
+                                        style="width: 100%; padding: 24px 24px 24px 56px; border-radius: 28px; border: 2px solid #e2e8f0; background: #f8fafc; outline: none; font-size: 16px; font-weight: 500; color: #1e293b; transition: all 0.3s; box-shadow: inset 0 2px 6px rgba(0,0,0,0.02);"
+                                        onfocus="this.style.borderColor='#a855f7'; this.style.background='white'; this.style.boxShadow='0 0 0 4px rgba(168, 85, 247, 0.1)'"
+                                        onblur="this.style.borderColor='#e2e8f0'; this.style.background='#f8fafc'; this.style.boxShadow='inset 0 2px 6px rgba(0,0,0,0.02)'">
+                                </div>
+                                <button type="button" id="sia-send-btn"
+                                    style="width: 72px; height: 72px; border-radius: 28px; background: linear-gradient(135deg, #a855f7, #6366f1); border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 12px 30px rgba(168,85,247,0.4); flex-shrink: 0;"
+                                    onmouseover="this.style.transform='scale(1.08) translateY(-4px)'"
+                                    onmouseout="this.style.transform='none'"><i class="fa-solid fa-paper-plane"
+                                        style="transform: translateX(-2px); font-size: 26px;"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="inventoryModal" class="modal-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+        <div class="modal-content"
+            style="background: var(--card); padding: 24px; border-radius: var(--radius-lg); width: 95%; max-width: 740px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: fadeIn 0.3s ease; border: 1px solid var(--border);">
+            <div class="section-title"
+                style="margin-top: 0; font-size: 22px; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 24px;">
+                <i class="fa-solid fa-boxes-stacked"></i> Add / Update Stock
+            </div>
+
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="field">
+                    <label for="invCategory">Category</label>
+                    <select id="invCategory" required>
+                        <option value="">Select Category</option>
+                        <option>Accessory</option>
+                        <option>Cable</option>
+                        <option>Charger</option>
+                        <option>Earbuds</option>
+                        <option>Headphones</option>
+                        <option>Keyboard</option>
+                        <option>Laptop</option>
+                        <option>Mobile</option>
+                        <option>Mouse</option>
+                        <option>PowerBank</option>
+                        <option>Smartwatch</option>
+                        <option>Speaker</option>
+                        <option>Tablet</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="invStock">Stock Quantity</label>
+                    <input type="number" id="invStock" min="0" placeholder="e.g. 10" required />
+                </div>
+            </div>
+
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="field">
+                    <label for="invBrand">Brand</label>
+                    <input list="invBrandSuggestions" type="text" id="invBrand" placeholder="e.g. Apple" required />
+                    <datalist id="invBrandSuggestions"></datalist>
+                </div>
+                <div class="field">
+                    <label for="invModel">Model</label>
+                    <input list="invModelSuggestions" type="text" id="invModel" placeholder="e.g. iPhone 15" required />
+                    <datalist id="invModelSuggestions"></datalist>
+                </div>
+            </div>
+
+            <div id="invSpecFieldsContainer"
+                style="margin-bottom: 24px; padding: 16px; background: var(--input-bg); border-radius: var(--radius-md); border: 1px dashed var(--border); display: none;">
+                <div
+                    style="font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em;">
+                    <i class="fa-solid fa-sliders"></i> Specifications
+                </div>
+                <div id="invSpecFields" class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 0;">
+                    <!-- Spec fields appended dynamically here -->
+                </div>
+            </div>
+
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="field">
+                    <label for="invCost">Purchase Cost (₹)</label>
+                    <input type="number" id="invCost" min="0" placeholder="0.00" />
+                </div>
+                <div class="field">
+                    <label for="invPrice">Selling Price (₹)</label>
+                    <input type="number" id="invPrice" min="0" placeholder="0.00" />
+                </div>
+            </div>
+
+            <input type="hidden" id="invId" value="" />
+
+            <div style="display: flex; gap: 16px; margin-top: 32px;">
+                <button type="button" class="next-btn outline" id="closeInvModalBtn"
+                    style="flex: 1; padding: 16px; font-size: 16px;">Cancel</button>
+                <button type="button" class="next-btn primary" id="saveInvStockBtn"
+                    style="flex: 1; padding: 16px; font-size: 16px;">Save Stock</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONTEXT MENU -->
+    <div id="customContextMenu" class="custom-menu">
+        <div class="menu-item-ctx" id="menu-copy"><i class="fa-solid fa-copy"></i> Copy</div>
+        <div class="menu-item-ctx" id="menu-paste"><i class="fa-solid fa-paste"></i> Paste</div>
+        <div class="menu-item-ctx" id="menu-cut"><i class="fa-solid fa-cut"></i> Cut</div>
+    </div>
+
+    <div id="toastMessage" class="toastMessage"></div>
+
+    <!-- SCANNER MODAL -->
+    <div id="scannerModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; align-items:center; justify-content:center; flex-direction:column; padding: 20px;">
+        <div
+            style="background:var(--card); width:100%; max-width:500px; border-radius:var(--radius-lg); overflow:hidden; position:relative;">
+            <div
+                style="padding: 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0;"><i class="fa-solid fa-camera"></i> Scan Barcode</h3>
+                <button onclick="closeScanner()"
+                    style="background:none; border:none; color:var(--text); cursor:pointer; font-size:20px;"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="reader" style="width:100%;"></div>
+            <div style="padding: 16px; text-align:center; color:var(--text-muted); font-size:14px;">
+                Point your camera at a barcode or QR code.
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=2"></script>
+
+    <script>
+        // APP VIEW ROUTING
+        document.addEventListener("DOMContentLoaded", () => {
+            const menuItems = document.querySelectorAll(".app-sidebar .menu-item[data-view]");
+            const appViews = document.querySelectorAll(".app-view");
+
+            menuItems.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    menuItems.forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+
+                    appViews.forEach(v => v.classList.remove("active"));
+                    const targetId = btn.getAttribute("data-view");
+                    const targetView = document.getElementById(targetId);
+                    if (targetView) targetView.classList.add("active");
+
+                    // Trigger Analytics Update if selected
+                    if (targetId === 'view-analytics' && typeof updateDashboard === 'function') {
+                        const loader = document.getElementById('analytics-loader');
+                        const content = document.getElementById('analytics-content-wrapper');
+                        const analyticsSidebar = document.getElementById('analyticsSideNav');
+
+                        if (loader && content && analyticsSidebar) {
+                            // 1. Show Graphical Animation
+                            loader.style.display = 'flex';
+                            content.style.opacity = '0';
+
+                            setTimeout(() => {
+                                // 2. Update Data
+                                updateDashboard();
+
+                                // 3. Hide Loader & Fade In
+                                loader.style.display = 'none';
+                                content.style.opacity = '1';
+
+                                // 4. Auto-collapse sidebar
+                                analyticsSidebar.classList.add('collapsed-sidebar');
+
+                                // 5. Reflow charts to ensure 100% width fitting
+                                setTimeout(() => {
+                                    try {
+                                        if (typeof revenueSegmentsChartObj !== 'undefined' && revenueSegmentsChartObj) revenueSegmentsChartObj.resize();
+                                        if (typeof inventoryStatusChartObj !== 'undefined' && inventoryStatusChartObj) inventoryStatusChartObj.resize();
+                                        if (typeof revenueQuarterlyChartObj !== 'undefined' && revenueQuarterlyChartObj) revenueQuarterlyChartObj.resize();
+                                    } catch (e) { console.warn(e) }
+                                }, 400); // Wait for CSS transition
+                            }, 1200); // 1.2s Graphical Loading
+                        } else {
+                            updateDashboard();
+                        }
+                    }
+
+                    // Trigger CRM Load if selected
+                    if (targetId === 'view-crm' && typeof loadCRM === 'function') {
+                        // Reset CRM Sub-views
+                        const listV = document.getElementById('crm-list-view');
+                        const profV = document.getElementById('crm-profile-view');
+                        if (listV) listV.style.display = 'block';
+                        if (profV) profV.style.display = 'none';
+
+                        // Reset CRM Tabs
+                        document.querySelectorAll('.crm-tab-btn').forEach(t => t.classList.remove('active'));
+                        const defTabBtn = document.querySelector('.crm-tab-btn[data-crm-tab="crm-tab-customers"]');
+                        if (defTabBtn) defTabBtn.classList.add('active');
+                        document.querySelectorAll('.crm-tab-panel').forEach(p => p.style.display = 'none');
+                        const defPanel = document.getElementById('crm-tab-customers');
+                        if (defPanel) defPanel.style.display = 'block';
+
+                        loadCRM();
+                    }
+
+                    // Close mobile menu
+                    const sidebar = document.getElementById("appSidebar");
+                    if (sidebar) sidebar.classList.remove("mobile-open");
+                });
+            });
+
+            // Set default view on load
+            const defaultBtn = document.querySelector('.menu-item[data-view="view-analytics"]');
+            if (defaultBtn) {
+                // We don't click it immediately because DOMContentLoaded might not have everything ready for charts
+                // But we can trigger the logic
+                setTimeout(() => {
+                    defaultBtn.click();
+                }, 100);
+            }
+
+            const mobileToggle = document.getElementById("mobileToggle");
+            if (mobileToggle) {
+                mobileToggle.addEventListener("click", () => {
+                    const sidebar = document.getElementById("appSidebar");
+                    if (sidebar) sidebar.classList.toggle("mobile-open");
+                });
+            }
+
+            // Analytics Toggle Button Binding
+            const analyticsToggleBtn = document.getElementById("analyticsToggleSidebarBtn");
+            if (analyticsToggleBtn) {
+                analyticsToggleBtn.addEventListener("click", () => {
+                    const sidebar = document.getElementById("analyticsSideNav");
+                    if (sidebar) {
+                        sidebar.classList.toggle("collapsed-sidebar");
+                        // Reflow charts after sidebar slides
+                        setTimeout(() => {
+                            try {
+                                if (typeof revenueSegmentsChartObj !== 'undefined' && revenueSegmentsChartObj) revenueSegmentsChartObj.resize();
+                                if (typeof inventoryStatusChartObj !== 'undefined' && inventoryStatusChartObj) inventoryStatusChartObj.resize();
+                                if (typeof revenueQuarterlyChartObj !== 'undefined' && revenueQuarterlyChartObj) revenueQuarterlyChartObj.resize();
+                            } catch (e) { console.warn(e) }
+                        }, 400);
+                    }
+                });
+            }
+        });
+
+        // Repurpose the auto jump to Search step from script to switch App view 
+        // Intercepting any code in script.js that wants to click the search tab
+        const originalReprint = window.reprintFromSearch;
+        if (originalReprint) {
+            window.reprintFromSearch = function (invData) {
+                originalReprint(invData);
+                // Switch view back to invoice form
+                document.querySelector('[data-view="view-invoice"]').click();
+            }
+        }
+
+        // Settings View Tab Switching Logic
+        const settingsTabs = document.querySelectorAll('.settings-tab-btn');
+        const settingsPanels = document.querySelectorAll('.settings-panel');
+        settingsTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Reset tabs
+                settingsTabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.style.background = 'transparent';
+                    t.style.color = 'var(--text)';
+                });
+
+                // Set active tab
+                tab.classList.add('active');
+                tab.style.background = 'rgba(168, 85, 247, 0.1)';
+                tab.style.color = 'var(--primary)';
+
+                // Hide panels
+                settingsPanels.forEach(p => p.style.display = 'none');
+
+                // Show target panel
+                const targetId = tab.getAttribute('data-target');
+                document.getElementById(targetId).style.display = 'block';
+            });
+        });
+
+        // CRM Sub-Tab Switching Logic
+        const crmTabs = document.querySelectorAll('.crm-tab-btn');
+        const crmPanels = document.querySelectorAll('.crm-tab-panel');
+        crmTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                crmTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                crmPanels.forEach(p => p.style.display = 'none');
+                const targetId = tab.getAttribute('data-crm-tab');
+                const targetPanel = document.getElementById(targetId);
+                if (targetPanel) targetPanel.style.display = 'block';
+            });
+        });
+    </script>
+
+    <!-- NOTIFICATION PANEL -->
+    <div id="notificationPanel"
+        style="position: fixed; top: 0; right: -350px; width: 320px; height: 100vh; background: var(--card); box-shadow: -4px 0 15px rgba(0,0,0,0.1); border-left: 1px solid var(--border); z-index: 9999; transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column;">
+        <div
+            style="padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg);">
+            <h3 style="margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px;"><i
+                    class="fa-solid fa-bell" style="color: var(--primary);"></i> Notifications</h3>
+            <button onclick="document.getElementById('notificationPanel').classList.remove('show')"
+                style="background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer;"><i
+                    class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="notificationList"
+            style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="text-align: center; color: var(--text-muted); padding: 40px 0;">
+                <i class="fa-solid fa-check-circle" style="font-size: 32px; opacity: 0.3; margin-bottom: 12px;"></i><br>
+                All caught up!
+            </div>
+        </div>
+    </div>
+    <style>
+        #notificationPanel.show {
+            right: 0 !important;
+        }
+
+        .notif-item {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            font-size: 13px;
+            line-height: 1.4;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .notif-warning {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .notif-danger {
+            border-left: 4px solid #ef4444;
+        }
+
+        .notif-info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .notif-icon {
+            font-size: 16px;
+            margin-top: 2px;
+        }
+
+        .notif-content {
+            flex: 1;
+        }
+
+        .notif-title {
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .notif-desc {
+            color: var(--text-muted);
+            display: block;
+        }
+    </style>
+</body>
+
+</html>
